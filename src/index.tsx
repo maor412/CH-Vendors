@@ -672,7 +672,7 @@ app.get('/products', (c) => {
     let allProducts = [];
     async function loadProductsPage() {
       try {
-        checkAuthStatus();
+        checkAuth();
         const [prodsRes, catsRes] = await Promise.all([
           axios.get('/api/products'),
           axios.get('/api/products/categories/list')
@@ -701,7 +701,7 @@ app.get('/products', (c) => {
       const grid = document.getElementById('products-grid');
       if (!products.length) { grid.innerHTML = '<p class="text-gray-400 col-span-3 text-center py-20">לא נמצאו מוצרים</p>'; return; }
       grid.innerHTML = products.map(p => createProductCard(p)).join('');
-      startAllCountdowns();
+      // countdowns started per-card by createProductCard
     }
     loadProductsPage();
   </script>
@@ -736,7 +736,7 @@ app.get('/categories', (c) => {
   <script>
     const categoryIcons = { 'fashion': 'fa-tshirt', 'jewelry': 'fa-gem', 'watches': 'fa-clock', 'electronics': 'fa-mobile-alt' };
     async function loadCategories() {
-      checkAuthStatus();
+      checkAuth();
       const res = await axios.get('/api/products/categories/list');
       const cats = res.data.data || [];
       const grid = document.getElementById('categories-grid');
@@ -787,7 +787,7 @@ app.get('/about', (c) => {
   </div>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="/static/app.js"></script>
-  <script>checkAuthStatus();</script>
+  <script>checkAuth();</script>
 </body>
 </html>`);
 });
@@ -828,7 +828,7 @@ app.get('/how-it-works', (c) => {
   </div>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="/static/app.js"></script>
-  <script>checkAuthStatus();</script>
+  <script>checkAuth();</script>
 </body>
 </html>`);
 });
@@ -876,7 +876,7 @@ app.get('/contact', (c) => {
   </div>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="/static/app.js"></script>
-  <script>checkAuthStatus();</script>
+  <script>checkAuth();</script>
 </body>
 </html>`);
 });
@@ -913,7 +913,7 @@ app.get('/legal/terms', (c) => {
   </div>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="/static/app.js"></script>
-  <script>checkAuthStatus();</script>
+  <script>checkAuth();</script>
 </body>
 </html>`);
 });
@@ -947,7 +947,7 @@ app.get('/legal/privacy', (c) => {
   </div>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="/static/app.js"></script>
-  <script>checkAuthStatus();</script>
+  <script>checkAuth();</script>
 </body>
 </html>`);
 });
@@ -980,7 +980,7 @@ app.get('/legal/cancellation', (c) => {
   </div>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
   <script src="/static/app.js"></script>
-  <script>checkAuthStatus();</script>
+  <script>checkAuth();</script>
 </body>
 </html>`);
 });
