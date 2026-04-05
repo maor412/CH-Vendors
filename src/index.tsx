@@ -998,17 +998,17 @@ app.get('/product/:id', (c) => {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <style>${luxuryStyles}
-    .countdown-timer { background: rgba(220,38,38,0.2); border: 2px solid #dc2626; border-radius: 12px; padding: 16px 24px; display: inline-block; }
-    .price-original { text-decoration: line-through; color: #9ca3af; }
-    .price-campaign { color: #dc2626; font-size: 2.5rem; font-weight: 800; }
-    .badge-discount { background: #dc2626; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; }
+    .countdown-timer { background: rgba(220,38,38,0.15); border: 1.5px solid #dc2626; }
+    .price-original { text-decoration: line-through; color: #6b7280; }
+    .price-campaign { color: #dc2626; font-weight: 900; }
+    .variant-btn.selected { border-color: #dc2626; background: rgba(220,38,38,0.15); }
   </style>
 </head>
 <body>
   ${navHtml}
   <div id="product-container" class="container mx-auto px-6 pt-32 pb-20 max-w-5xl">
     <div class="text-center py-20">
-      <i class="fas fa-spinner fa-spin text-4xl text-red-600"></i>
+      <i class="fas fa-spinner fa-spin text-5xl text-red-600"></i>
       <p class="mt-4 text-gray-400">טוען מוצר...</p>
     </div>
   </div>
@@ -1016,71 +1016,7 @@ app.get('/product/:id', (c) => {
   <script src="/static/app.js"></script>
   <script>
     checkAuth();
-    async function loadProduct() {
-      const productId = ${productId};
-      try {
-        const res = await axios.get('/api/products/' + productId);
-        if (!res.data.success) { document.getElementById('product-container').innerHTML = '<p class="text-red-400 text-center">מוצר לא נמצא</p>'; return; }
-        const p = res.data.data;
-        const discount = p.original_price > 0 ? Math.round((1 - p.campaign_price/p.original_price)*100) : 0;
-        const hasCampaign = p.campaign_id && p.end_date;
-        document.title = p.title + ' - CH Vendors Sales';
-        document.getElementById('product-container').innerHTML = \`
-          <a href="/" class="text-gray-400 hover:text-white mb-8 inline-block"><i class="fas fa-arrow-right ml-2"></i>חזרה</a>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-6">
-            <!-- Image -->
-            <div class="luxury-card rounded-2xl overflow-hidden flex items-center justify-center min-h-64 p-8">
-              \${p.image_url
-                ? '<img src="'+p.image_url+'" alt="'+p.title+'" class="w-full object-contain max-h-96 rounded-xl">'
-                : '<div class="text-center text-gray-600"><i class="fas fa-image text-6xl mb-4"></i><p>אין תמונה</p></div>'}
-            </div>
-            <!-- Details -->
-            <div class="space-y-6">
-              \${p.category_name ? '<span class="text-red-600 text-sm font-semibold uppercase">'+p.category_name+'</span>' : ''}
-              <h1 class="text-4xl font-black leading-tight">\${p.title}</h1>
-              <p class="text-gray-400 text-lg">\${p.description || ''}</p>
-              <!-- Price -->
-              <div class="luxury-card rounded-2xl p-6">
-                <div class="flex items-center gap-4 mb-2">
-                  <span class="price-original text-xl">₪\${(p.original_price/100).toLocaleString()}</span>
-                  \${discount > 0 ? '<span class="badge-discount">חסכון '+discount+'%</span>' : ''}
-                </div>
-                <div class="price-campaign">₪\${(p.campaign_price/100).toLocaleString()}</div>
-                \${p.fixed_shipping_cost > 0 ? '<p class="text-gray-400 text-sm mt-1">+ משלוח ₪'+(p.fixed_shipping_cost/100)+'</p>' : '<p class="text-green-500 text-sm mt-1">✓ משלוח חינם</p>'}
-              </div>
-              <!-- Countdown -->
-              \${hasCampaign ? \`
-                <div class="countdown-timer text-center">
-                  <p class="text-gray-400 text-sm mb-2">הקמפיין נסגר בעוד</p>
-                  <div id="countdown-\${p.campaign_id}" class="text-2xl font-bold text-red-400"></div>
-                </div>
-              \` : '<p class="text-gray-500">אין קמפיין פעיל כרגע</p>'}
-              <!-- CTA -->
-              \${hasCampaign ? '<button onclick="joinCampaign('+p.campaign_id+','+productId+')" class="luxury-btn w-full py-4 rounded-xl text-white font-bold text-xl mt-4"><i class="fas fa-bolt ml-2"></i>הצטרף לקמפיין עכשיו</button>' : ''}
-            </div>
-          </div>
-          <!-- Long description -->
-          \${p.long_description ? '<div class="luxury-card rounded-2xl p-8 mt-12"><h2 class="text-2xl font-bold mb-4">תיאור מפורט</h2><p class="text-gray-300 leading-relaxed whitespace-pre-line">'+p.long_description+'</p></div>' : ''}
-        \`;
-        if (hasCampaign) startCountdown(p.campaign_id, p.end_date);
-      } catch(e) {
-        document.getElementById('product-container').innerHTML = '<p class="text-red-400 text-center py-20">שגיאה בטעינת המוצר</p>';
-      }
-    }
-
-    async function joinCampaign(campaignId, productId) {
-      const token = localStorage.getItem('auth_token');
-      if (!token) { window.location.href = '/login'; return; }
-      // Check membership first
-      try {
-        const memRes = await axios.get('/api/membership/status', {headers:{Authorization:'Bearer '+token}});
-        if (!memRes.data.data?.isActive) { window.location.href = '/membership'; return; }
-        // Redirect to join flow (dashboard)
-        window.location.href = '/dashboard';
-      } catch(e) { window.location.href = '/login'; }
-    }
-
-    loadProduct();
+    loadProductPage(${productId});
   </script>
 </body>
 </html>`);
