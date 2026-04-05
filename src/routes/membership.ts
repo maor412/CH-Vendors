@@ -68,20 +68,19 @@ membership.post('/subscribe', async (c) => {
     const startDate = new Date();
     const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    // Create membership
+    // Create membership (payment_method_id kept NULL until real payment gateway integrated)
     const membershipResult = await c.env.DB
       .prepare(`
         INSERT INTO memberships 
-        (user_id, status, start_date, end_date, monthly_fee, payment_method_id, auto_renew)
-        VALUES (?, 'active', ?, ?, ?, ?, 1)
+        (user_id, status, start_date, end_date, monthly_fee, auto_renew)
+        VALUES (?, 'active', ?, ?, ?, 1)
         RETURNING *
       `)
       .bind(
         currentUser.userId, 
         startDate.toISOString(), 
         endDate.toISOString(),
-        monthlyFee,
-        payment_method_id || null
+        monthlyFee
       )
       .first();
 

@@ -118,15 +118,15 @@ admin.post('/products', async (c) => {
         RETURNING *
       `)
       .bind(
-        category_id,
+        category_id ?? null,
         sanitizeInput(title),
         sanitizeInput(description || ''),
         sanitizeInput(long_description || ''),
         original_price,
         campaign_price,
         fixed_shipping_cost,
-        image_url,
-        is_featured,
+        image_url ?? null,
+        is_featured ? 1 : 0,
         currentUser.userId
       )
       .first();
@@ -172,16 +172,16 @@ admin.put('/products/:id', async (c) => {
         WHERE id = ?
       `)
       .bind(
-        category_id,
-        sanitizeInput(title),
+        category_id ?? null,
+        sanitizeInput(title || ''),
         sanitizeInput(description || ''),
         sanitizeInput(long_description || ''),
         original_price,
         campaign_price,
-        fixed_shipping_cost,
-        image_url,
-        is_featured,
-        is_active,
+        fixed_shipping_cost ?? 0,
+        image_url ?? null,
+        is_featured ? 1 : 0,
+        is_active ?? 1,
         productId
       )
       .run();
@@ -429,7 +429,7 @@ admin.post('/categories', async (c) => {
         VALUES (?, ?, ?, ?, ?, ?)
         RETURNING *
       `)
-      .bind(sanitizeInput(name), name_en, slug, description, parent_id, sort_order)
+      .bind(sanitizeInput(name), name_en ?? null, slug, description ?? null, parent_id ?? null, sort_order)
       .first();
 
     await logAudit(c.env.DB, currentUser.userId, 'create_category', 'category', result?.id as number, { name });

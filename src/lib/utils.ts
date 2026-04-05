@@ -108,14 +108,14 @@ export async function logAudit(
   resourceType: string,
   resourceId: number | null,
   details: any,
-  ipAddress?: string,
-  userAgent?: string
+  ipAddress?: string | null,
+  userAgent?: string | null
 ): Promise<void> {
   await db
     .prepare(
       'INSERT INTO audit_logs (user_id, action, resource_type, resource_id, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)'
     )
-    .bind(userId, action, resourceType, resourceId, JSON.stringify(details), ipAddress, userAgent)
+    .bind(userId, action, resourceType, resourceId, JSON.stringify(details), ipAddress ?? null, userAgent ?? null)
     .run();
 }
 

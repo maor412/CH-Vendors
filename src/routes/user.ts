@@ -116,7 +116,10 @@ user.get('/addresses', async (c) => {
 user.post('/addresses', async (c) => {
   try {
     const currentUser = c.get('user');
-    const { full_name, street, city, postal_code, phone, is_default } = await c.req.json();
+    const { full_name, street, city, postal_code, zip_code, label, phone, is_default } = await c.req.json();
+
+    // Support both postal_code and zip_code field names
+    const resolvedPostalCode = postal_code || zip_code || null;
 
     if (!street || !city) {
       return c.json<ApiResponse>({ success: false, error: 'רחוב ועיר הם חובה' }, 400);
@@ -136,7 +139,7 @@ user.post('/addresses', async (c) => {
         VALUES (?, 'shipping', ?, ?, ?, ?, ?, ?)
         RETURNING *
       `)
-      .bind(currentUser.userId, full_name, street, city, postal_code, phone, is_default ? 1 : 0)
+      .bind(currentUser.userId, full_name ?? null, street, city, resolvedPostalCode, phone ?? null, is_default ? 1 : 0)
       .first();
 
     await logAudit(c.env.DB, currentUser.userId, 'add_address', 'address', result?.id as number, { street, city });
@@ -157,22 +160,33 @@ user.post('/addresses', async (c) => {
 user.post('/campaigns/join', membershipMiddleware, async (c) => {
   try {
     const currentUser = c.get('user');
+    const body = await c.req.json();
     const { 
-      campaign_id, 
-      product_id, 
       quantity = 1, 
       variant_id, 
       address_id,
+      agree_terms,
+      agree_cancellation,
+      agree_charge,
       terms_accepted,
       cancellation_accepted
-    } = await c.req.json();
+    } = body;
+
+    // Support both campaign_window_id and campaign_id field names
+    const campaign_id = body.campaign_window_id || body.campaign_id;
+    // Support both product_id standalone or derived from campaign
+    let product_id = body.product_id;
 
     // Validation
-    if (!campaign_id || !product_id || !address_id) {
+    if (!campaign_id || !address_id) {
       return c.json<ApiResponse>({ success: false, error: 'נתונים חסרים' }, 400);
     }
 
-    if (!terms_accepted || !cancellation_accepted) {
+    // Support both old and new field names for consent
+    const hasTermsAccepted = agree_terms || terms_accepted;
+    const hasCancellationAccepted = agree_cancellation || cancellation_accepted;
+
+    if (!hasTermsAccepted || !hasCancellationAccepted) {
       return c.json<ApiResponse>({ success: false, error: 'יש לאשר את התנאים ומדיניות הביטול' }, 400);
     }
 
@@ -180,10 +194,19 @@ user.post('/campaigns/join', membershipMiddleware, async (c) => {
     const campaign = await c.env.DB
       .prepare('SELECT * FROM campaign_windows WHERE id = ? AND status = ? AND end_date > datetime("now")')
       .bind(campaign_id, 'active')
-      .first();
+      .first<any>();
 
     if (!campaign) {
       return c.json<ApiResponse>({ success: false, error: 'הקמפיין אינו פעיל' }, 400);
+    }
+
+    // If product_id not provided, derive from campaign
+    if (!product_id) {
+      product_id = campaign.product_id;
+    }
+
+    if (!product_id) {
+      return c.json<ApiResponse>({ success: false, error: 'מוצר לא נמצא לקמפיין' }, 400);
     }
 
     // Check if already joined
@@ -206,7 +229,7 @@ user.post('/campaigns/join', membershipMiddleware, async (c) => {
       return c.json<ApiResponse>({ success: false, error: 'מוצר לא נמצא' }, 404);
     }
 
-    const total_amount = (product.campaign_price * quantity) + product.fixed_shipping_cost;
+    const total_amount = (product.campaign_price * quantity) + (product.fixed_shipping_cost || 0);
 
     // Insert participant
     const participant = await c.env.DB
@@ -216,12 +239,12 @@ user.post('/campaigns/join', membershipMiddleware, async (c) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'pending')
         RETURNING *
       `)
-      .bind(campaign_id, currentUser.userId, product_id, quantity, variant_id, address_id, total_amount)
+      .bind(campaign_id, currentUser.userId, product_id, quantity, variant_id ?? null, address_id, total_amount)
       .first();
 
     // Record consent
-    const ip = c.req.header('cf-connecting-ip');
-    const userAgent = c.req.header('user-agent');
+    const ip = c.req.header('cf-connecting-ip') ?? null;
+    const userAgent = c.req.header('user-agent') ?? null;
 
     await c.env.DB
       .prepare(`
